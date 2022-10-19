@@ -32,18 +32,19 @@ func connect(user *chat.User) error {
 	if err != nil {
 		return fmt.Errorf("Connection failed: %v", err)
 	}
-
 	wait.Add(1)
 	go func(str chat.Broadcast_CreateStreamClient) {
 		defer wait.Done()
-
+		if err != nil {
+			streamerror = fmt.Errorf("error reading message: %v", err)
+		}
 		for {
 			msg, err := str.Recv()
 			if err != nil {
 				streamerror = fmt.Errorf("error reading message: %v", err)
 				break
 			}
-			fmt.Printf("Sender: %v\n %v\n", msg.Sender, msg.Content)
+			fmt.Printf("Sender: %v\n%v\n", msg.Sender, msg.Content)
 		}
 	}(stream)
 	return streamerror
@@ -58,7 +59,7 @@ func main() {
 
 	conn, err := grpc.Dial("localhost:8080", grpc.WithInsecure())
 	if err != nil {
-		fmt.Printf("Error sending message: %v\n", err)
+		fmt.Printf("Error Dialling Host: %v\n", err)
 	}
 
 	client = chat.NewBroadcastClient(conn)
@@ -68,6 +69,13 @@ func main() {
 	}
 
 	connect(user)
+	var connectionMsg = &chat.Message{
+		Id:        "",
+		Sender:    "Server",
+		Content:   fmt.Sprintf("New User: %s connected to stream", user.Name),
+		Timestamp: time.Now().UTC().String(),
+	}
+	client.BroadcastMessage(context.Background(), connectionMsg)
 	wait.Add(1)
 	go func() {
 		defer wait.Done()
