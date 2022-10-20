@@ -21,7 +21,7 @@ func init() {
 
 type Connection struct {
 	stream chat.Broadcast_CreateStreamServer
-	id     string
+	id     int32
 	active bool
 	error  chan error
 }

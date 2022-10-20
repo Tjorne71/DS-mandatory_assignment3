@@ -4,27 +4,25 @@ import (
 	chat "assignment_3/chat"
 	"bufio"
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
-	"flag"
 	"fmt"
+	"math"
 	"os"
 	"sync"
-	"time"
 
 	"google.golang.org/grpc"
 )
 
 var client chat.BroadcastClient
 var wait *sync.WaitGroup
+var LamportT int
 
 func init() {
 	wait = &sync.WaitGroup{}
+	LamportT = 0
 }
 
 func connect(user *chat.User) error {
 	var streamerror error
-
 	stream, err := client.CreateStream(context.Background(), &chat.Connect{
 		User:   user,
 		Active: true,
@@ -44,18 +42,30 @@ func connect(user *chat.User) error {
 				streamerror = fmt.Errorf("error reading message: %v", err)
 				break
 			}
-			fmt.Printf("Sender: %v\n%v\n", msg.Sender, msg.Content)
+			pickStep(int(msg.Timestamp))
+			fmt.Printf("Sender: %v\n\t%v\nLamport timestamp: %d\n", msg.Sender, msg.Content, LamportT)
 		}
 	}(stream)
 	return streamerror
 }
 
+func clockStep() {
+	LamportT++
+}
+
+func pickStep(tprime int) {
+	LamportT = int(math.Max(float64(LamportT), float64(tprime))) + 1
+}
+
+func getUserName() string {
+	fmt.Printf("Input Your User Name: ")
+	scanner := bufio.NewScanner(os.Stdin)
+	scanner.Scan()
+	return scanner.Text()
+}
+
 func main() {
-	timestamp := time.Now().UTC()
 	done := make(chan int)
-	name := flag.String("N", "anon", "name of the user")
-	flag.Parse()
-	id := sha256.Sum256([]byte(timestamp.String() + *name))
 
 	conn, err := grpc.Dial("localhost:8080", grpc.WithInsecure())
 	if err != nil {
@@ -64,32 +74,29 @@ func main() {
 
 	client = chat.NewBroadcastClient(conn)
 	user := &chat.User{
-		Id:   hex.EncodeToString(id[:]),
-		Name: *name,
+		Name: getUserName(),
 	}
-
 	connect(user)
-	var connectionMsg = &chat.Message{
-		Id:        "",
-		Sender:    "Server",
-		Content:   fmt.Sprintf("New User: %s connected to stream", user.Name),
-		Timestamp: time.Now().UTC().String(),
+	connectionMSG := &chat.Message{
+				Id:        user.Id,
+				Sender:    "Server Message",
+				Content:   fmt.Sprintf("Participant %v joined Chitty-Chat", user.Name),
+				Timestamp: int32(LamportT),
 	}
-	client.BroadcastMessage(context.Background(), connectionMsg)
+	client.BroadcastMessage(context.Background(), connectionMSG)
 	wait.Add(1)
 	go func() {
 		defer wait.Done()
-
 		scanner := bufio.NewScanner(os.Stdin)
 
 		for scanner.Scan() {
+			clockStep()
 			msg := &chat.Message{
 				Id:        user.Id,
 				Sender:    user.Name,
 				Content:   scanner.Text(),
-				Timestamp: timestamp.String(),
+				Timestamp: int32(LamportT),
 			}
-
 			_, err := client.BroadcastMessage(context.Background(), msg)
 			if err != nil {
 				fmt.Printf("Error sending message: %v\n", err)
