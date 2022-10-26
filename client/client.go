@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"strings"
 	"sync"
 
 	"google.golang.org/grpc"
@@ -83,10 +84,10 @@ func main() {
 	}
 	connect(user)
 	connectionMSG := &chat.Message{
-				Id:        user.Id,
-				Sender:    "Server Message",
-				Content:   fmt.Sprintf("Participant %v joined Chitty-Chat", user.Name),
-				Timestamp: int32(LamportT),
+		Id:        user.Id,
+		Sender:    "Server Message",
+		Content:   fmt.Sprintf("Participant %v joined Chitty-Chat", user.Name),
+		Timestamp: int32(LamportT),
 	}
 	client.BroadcastMessage(context.Background(), connectionMSG)
 	wait.Add(1)
@@ -96,16 +97,25 @@ func main() {
 
 		for scanner.Scan() {
 			clockStep()
+			msgContent := scanner.Text()
+			closeClient := false
+			if strings.ToLower(msgContent) == "exit" {
+				msgContent = fmt.Sprintf("Participant %v left Chitty-Chat", user.Name)
+				closeClient = true
+			}
 			msg := &chat.Message{
 				Id:        user.Id,
 				Sender:    user.Name,
-				Content:   scanner.Text(),
+				Content:   msgContent,
 				Timestamp: int32(LamportT),
 			}
 			_, err := client.BroadcastMessage(context.Background(), msg)
 			if err != nil {
 				fmt.Printf("Error sending message: %v\n", err)
 				break
+			}
+			if closeClient {
+				os.Exit(0)
 			}
 		}
 	}()
