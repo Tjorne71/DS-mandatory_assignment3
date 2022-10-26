@@ -22,15 +22,9 @@ func init() {
 	LamportT = 0
 }
 
-func ctxSetName(ctx context.Context, name string) context.Context {
-	return context.WithValue(ctx, "name", name)
-}
-
 func connect(user *chat.User) error {
 	var streamerror error
-	ctx := context.Background()
-	ctx = ctxSetName(ctx, user.Name)
-	stream, err := client.CreateStream(ctx, &chat.Connect{
+	stream, err := client.CreateStream(context.Background(), &chat.Connect{
 		User:   user,
 		Active: true,
 	})
