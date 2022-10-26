@@ -83,11 +83,12 @@ func main() {
 	}
 	connect(user)
 	connectionMSG := &chat.Message{
-				Id:        user.Id,
-				Sender:    "Server Message",
-				Content:   fmt.Sprintf("Participant %v joined Chitty-Chat", user.Name),
-				Timestamp: int32(LamportT),
+		Id:        user.Id,
+		Sender:    "Server Message",
+		Content:   fmt.Sprintf("Participant %v joined Chitty-Chat", user.Name),
+		Timestamp: int32(LamportT),
 	}
+
 	client.BroadcastMessage(context.Background(), connectionMSG)
 	wait.Add(1)
 	go func() {
@@ -102,11 +103,17 @@ func main() {
 				Content:   scanner.Text(),
 				Timestamp: int32(LamportT),
 			}
-			_, err := client.BroadcastMessage(context.Background(), msg)
-			if err != nil {
-				fmt.Printf("Error sending message: %v\n", err)
-				break
+			if len(msg.Content) > 128 {
+				fmt.Printf("Message longer than 128 characters\n")
+
+			} else {
+				_, err := client.BroadcastMessage(context.Background(), msg)
+				if err != nil {
+					fmt.Printf("Error sending message: %v\n", err)
+					break
+				}
 			}
+
 		}
 	}()
 
