@@ -77,6 +77,7 @@ func main() {
 		Name: getUserName(),
 	}
 	connect(user)
+	fmt.Printf("Enter 'exit' to close connection\n")
 	connectionMSG := &chat.ChatMessage{
 		Id:        user.Id,
 		Sender:    "Server Message",
