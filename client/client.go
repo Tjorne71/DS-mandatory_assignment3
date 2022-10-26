@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"strings"
 	"sync"
 
 	"google.golang.org/grpc"
@@ -97,10 +98,16 @@ func main() {
 
 		for scanner.Scan() {
 			clockStep()
+			msgContent := scanner.Text()
+			closeClient := false
+			if strings.ToLower(msgContent) == "exit" {
+				msgContent = fmt.Sprintf("Participant %v left Chitty-Chat", user.Name)
+				closeClient = true
+			}
 			msg := &chat.Message{
 				Id:        user.Id,
 				Sender:    user.Name,
-				Content:   scanner.Text(),
+				Content:   msgContent,
 				Timestamp: int32(LamportT),
 			}
 			if len(msg.Content) > 128 {
@@ -113,7 +120,9 @@ func main() {
 					break
 				}
 			}
-
+			if closeClient {
+				os.Exit(0)
+			}
 		}
 	}()
 
