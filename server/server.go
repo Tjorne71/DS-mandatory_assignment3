@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net"
 	"os"
@@ -11,17 +12,49 @@ import (
 
 	"google.golang.org/grpc"
 	glog "google.golang.org/grpc/grpclog"
+	"google.golang.org/grpc/stats"
 )
 
 var grpclog glog.LoggerV2
+
+var userMap = make(map[string]int)
 
 func init() {
 	grpclog = glog.NewLoggerV2(os.Stdout, os.Stdout, os.Stdout)
 }
 
+type Handler struct {
+}
+
+func (h *Handler) TagRPC(context.Context, *stats.RPCTagInfo) context.Context {
+	log.Println("TagRPC")
+	return context.Background()
+}
+
+// HandleRPC processes the RPC stats.
+func (h *Handler) HandleRPC(context.Context, stats.RPCStats) {
+	log.Println("HandleRPC")
+}
+
+func (h *Handler) TagConn(context.Context, *stats.ConnTagInfo) context.Context {
+
+	log.Println("Tag Conn")
+	return context.Background()
+}
+
+// HandleConn processes the Conn stats.
+func (h *Handler) HandleConn(c context.Context, s stats.ConnStats) {
+	switch s.(type) {
+	case *stats.ConnEnd:
+		log.Println("get connEnd")
+		fmt.Printf("client %v disconnected", c.Value("name"))
+		break
+	}
+}
+
 type Connection struct {
 	stream chat.Broadcast_CreateStreamServer
-	id     int32
+	userName     string
 	active bool
 	error  chan error
 }
@@ -33,7 +66,7 @@ type Server struct {
 func (s *Server) CreateStream(pconn *chat.Connect, stream chat.Broadcast_CreateStreamServer) error {
 	connection := &Connection{
 		stream: stream,
-		id:     pconn.User.Id,
+		userName:     pconn.User.Name,
 		active: true,
 		error:  make(chan error),
 	}
@@ -45,7 +78,6 @@ func (s *Server) CreateStream(pconn *chat.Connect, stream chat.Broadcast_CreateS
 func (s *Server) BroadcastMessage(ctx context.Context, msg *chat.Message) (*chat.Close, error) {
 	wait := sync.WaitGroup{}
 	done := make(chan int)
-
 	for _, conn := range s.Connection {
 		wait.Add(1)
 
@@ -76,7 +108,7 @@ func main() {
 
 	server := &Server{connections}
 
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(grpc.StatsHandler(&Handler{}))
 
 	listener, err := net.Listen("tcp", ":8080")
 	if err != nil {
@@ -91,3 +123,5 @@ func main() {
 		log.Fatalf("error serving: %v", err)
 	}
 }
+
+

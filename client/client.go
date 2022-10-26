@@ -21,9 +21,15 @@ func init() {
 	LamportT = 0
 }
 
+func ctxSetName(ctx context.Context, name string) context.Context {
+	return context.WithValue(ctx, "name", name)
+}
+
 func connect(user *chat.User) error {
 	var streamerror error
-	stream, err := client.CreateStream(context.Background(), &chat.Connect{
+	ctx := context.Background()
+	ctx = ctxSetName(ctx, user.Name)
+	stream, err := client.CreateStream(ctx, &chat.Connect{
 		User:   user,
 		Active: true,
 	})
@@ -66,7 +72,6 @@ func getUserName() string {
 
 func main() {
 	done := make(chan int)
-
 	conn, err := grpc.Dial("localhost:8080", grpc.WithInsecure())
 	if err != nil {
 		fmt.Printf("Error Dialling Host: %v\n", err)
