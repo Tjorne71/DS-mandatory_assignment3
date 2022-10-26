@@ -9,23 +9,23 @@ message User {
   string name = 2;
 }
 
-message Message {
+message ChatMessage {
   int32 id = 1;
-  string Sender = 2;
+  string sender = 2;
   string content = 3;
   int32 timestamp = 4;
 }
 
-message Connect {
+message Connect{
   User user = 1;
   bool active = 2;
 }
 
 message Close {}
 
-service Broadcast {
-  rpc CreateStream(Connect) returns (stream Message);
-  rpc BroadcastMessage(Message) returns (Close);
+service ChittyChat {
+  rpc CreateStream(Connect) returns (stream ChatMessage);
+  rpc SendMessage(ChatMessage) returns (Close);
 }
 
 // protoc --go_out=./chat --go-grpc_out=require_unimplemented_servers=false:./chat/  chat/chat.proto

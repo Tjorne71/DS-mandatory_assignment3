@@ -22,17 +22,17 @@ func init() {
 }
 
 type Connection struct {
-	stream   chat.Broadcast_CreateStreamServer
+	stream   chat.ChittyChat_CreateStreamServer
 	userName string
 	active   bool
 	error    chan error
 }
 
-type Server struct {
+type ChittyChatServer struct {
 	Connection []*Connection
 }
 
-func (s *Server) CreateStream(pconn *chat.Connect, stream chat.Broadcast_CreateStreamServer) error {
+func (s *ChittyChatServer) CreateStream(pconn *chat.Connect, stream chat.ChittyChat_CreateStreamServer) error {
 	connection := &Connection{
 		stream:   stream,
 		userName: pconn.User.Name,
@@ -44,13 +44,13 @@ func (s *Server) CreateStream(pconn *chat.Connect, stream chat.Broadcast_CreateS
 	return <-connection.error
 }
 
-func (s *Server) BroadcastMessage(ctx context.Context, msg *chat.Message) (*chat.Close, error) {
+func (s *ChittyChatServer) SendMessage(ctx context.Context, msg *chat.ChatMessage) (*chat.Close, error) {
 	wait := sync.WaitGroup{}
 	done := make(chan int)
 	for _, conn := range s.Connection {
 		wait.Add(1)
 
-		go func(msg *chat.Message, conn *Connection) {
+		go func(msg *chat.ChatMessage, conn *Connection) {
 			defer wait.Done()
 			if conn.active {
 				err := conn.stream.Send(msg)
@@ -74,7 +74,7 @@ func (s *Server) BroadcastMessage(ctx context.Context, msg *chat.Message) (*chat
 func main() {
 	var connections []*Connection
 
-	server := &Server{connections}
+	server := &ChittyChatServer{connections}
 
 	grpcServer := grpc.NewServer()
 
@@ -85,7 +85,7 @@ func main() {
 
 	grpclog.Info("Starting server at port 8080")
 
-	chat.RegisterBroadcastServer(grpcServer, server)
+	chat.RegisterChittyChatServer(grpcServer, server)
 	err = grpcServer.Serve(listener)
 	if err != nil {
 		log.Fatalf("error serving: %v", err)

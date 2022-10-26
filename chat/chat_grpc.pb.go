@@ -18,28 +18,28 @@ import (
 // Requires gRPC-Go v1.32.0 or later.
 const _ = grpc.SupportPackageIsVersion7
 
-// BroadcastClient is the client API for Broadcast service.
+// ChittyChatClient is the client API for ChittyChat service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type BroadcastClient interface {
-	CreateStream(ctx context.Context, in *Connect, opts ...grpc.CallOption) (Broadcast_CreateStreamClient, error)
-	BroadcastMessage(ctx context.Context, in *Message, opts ...grpc.CallOption) (*Close, error)
+type ChittyChatClient interface {
+	CreateStream(ctx context.Context, in *Connect, opts ...grpc.CallOption) (ChittyChat_CreateStreamClient, error)
+	SendMessage(ctx context.Context, in *ChatMessage, opts ...grpc.CallOption) (*Close, error)
 }
 
-type broadcastClient struct {
+type chittyChatClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewBroadcastClient(cc grpc.ClientConnInterface) BroadcastClient {
-	return &broadcastClient{cc}
+func NewChittyChatClient(cc grpc.ClientConnInterface) ChittyChatClient {
+	return &chittyChatClient{cc}
 }
 
-func (c *broadcastClient) CreateStream(ctx context.Context, in *Connect, opts ...grpc.CallOption) (Broadcast_CreateStreamClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Broadcast_ServiceDesc.Streams[0], "/proto.Broadcast/CreateStream", opts...)
+func (c *chittyChatClient) CreateStream(ctx context.Context, in *Connect, opts ...grpc.CallOption) (ChittyChat_CreateStreamClient, error) {
+	stream, err := c.cc.NewStream(ctx, &ChittyChat_ServiceDesc.Streams[0], "/proto.ChittyChat/CreateStream", opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &broadcastCreateStreamClient{stream}
+	x := &chittyChatCreateStreamClient{stream}
 	if err := x.ClientStream.SendMsg(in); err != nil {
 		return nil, err
 	}
@@ -49,117 +49,117 @@ func (c *broadcastClient) CreateStream(ctx context.Context, in *Connect, opts ..
 	return x, nil
 }
 
-type Broadcast_CreateStreamClient interface {
-	Recv() (*Message, error)
+type ChittyChat_CreateStreamClient interface {
+	Recv() (*ChatMessage, error)
 	grpc.ClientStream
 }
 
-type broadcastCreateStreamClient struct {
+type chittyChatCreateStreamClient struct {
 	grpc.ClientStream
 }
 
-func (x *broadcastCreateStreamClient) Recv() (*Message, error) {
-	m := new(Message)
+func (x *chittyChatCreateStreamClient) Recv() (*ChatMessage, error) {
+	m := new(ChatMessage)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
 	return m, nil
 }
 
-func (c *broadcastClient) BroadcastMessage(ctx context.Context, in *Message, opts ...grpc.CallOption) (*Close, error) {
+func (c *chittyChatClient) SendMessage(ctx context.Context, in *ChatMessage, opts ...grpc.CallOption) (*Close, error) {
 	out := new(Close)
-	err := c.cc.Invoke(ctx, "/proto.Broadcast/BroadcastMessage", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/proto.ChittyChat/SendMessage", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// BroadcastServer is the server API for Broadcast service.
-// All implementations should embed UnimplementedBroadcastServer
+// ChittyChatServer is the server API for ChittyChat service.
+// All implementations should embed UnimplementedChittyChatServer
 // for forward compatibility
-type BroadcastServer interface {
-	CreateStream(*Connect, Broadcast_CreateStreamServer) error
-	BroadcastMessage(context.Context, *Message) (*Close, error)
+type ChittyChatServer interface {
+	CreateStream(*Connect, ChittyChat_CreateStreamServer) error
+	SendMessage(context.Context, *ChatMessage) (*Close, error)
 }
 
-// UnimplementedBroadcastServer should be embedded to have forward compatible implementations.
-type UnimplementedBroadcastServer struct {
+// UnimplementedChittyChatServer should be embedded to have forward compatible implementations.
+type UnimplementedChittyChatServer struct {
 }
 
-func (UnimplementedBroadcastServer) CreateStream(*Connect, Broadcast_CreateStreamServer) error {
+func (UnimplementedChittyChatServer) CreateStream(*Connect, ChittyChat_CreateStreamServer) error {
 	return status.Errorf(codes.Unimplemented, "method CreateStream not implemented")
 }
-func (UnimplementedBroadcastServer) BroadcastMessage(context.Context, *Message) (*Close, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method BroadcastMessage not implemented")
+func (UnimplementedChittyChatServer) SendMessage(context.Context, *ChatMessage) (*Close, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SendMessage not implemented")
 }
 
-// UnsafeBroadcastServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to BroadcastServer will
+// UnsafeChittyChatServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to ChittyChatServer will
 // result in compilation errors.
-type UnsafeBroadcastServer interface {
-	mustEmbedUnimplementedBroadcastServer()
+type UnsafeChittyChatServer interface {
+	mustEmbedUnimplementedChittyChatServer()
 }
 
-func RegisterBroadcastServer(s grpc.ServiceRegistrar, srv BroadcastServer) {
-	s.RegisterService(&Broadcast_ServiceDesc, srv)
+func RegisterChittyChatServer(s grpc.ServiceRegistrar, srv ChittyChatServer) {
+	s.RegisterService(&ChittyChat_ServiceDesc, srv)
 }
 
-func _Broadcast_CreateStream_Handler(srv interface{}, stream grpc.ServerStream) error {
+func _ChittyChat_CreateStream_Handler(srv interface{}, stream grpc.ServerStream) error {
 	m := new(Connect)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(BroadcastServer).CreateStream(m, &broadcastCreateStreamServer{stream})
+	return srv.(ChittyChatServer).CreateStream(m, &chittyChatCreateStreamServer{stream})
 }
 
-type Broadcast_CreateStreamServer interface {
-	Send(*Message) error
+type ChittyChat_CreateStreamServer interface {
+	Send(*ChatMessage) error
 	grpc.ServerStream
 }
 
-type broadcastCreateStreamServer struct {
+type chittyChatCreateStreamServer struct {
 	grpc.ServerStream
 }
 
-func (x *broadcastCreateStreamServer) Send(m *Message) error {
+func (x *chittyChatCreateStreamServer) Send(m *ChatMessage) error {
 	return x.ServerStream.SendMsg(m)
 }
 
-func _Broadcast_BroadcastMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Message)
+func _ChittyChat_SendMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ChatMessage)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(BroadcastServer).BroadcastMessage(ctx, in)
+		return srv.(ChittyChatServer).SendMessage(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/proto.Broadcast/BroadcastMessage",
+		FullMethod: "/proto.ChittyChat/SendMessage",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(BroadcastServer).BroadcastMessage(ctx, req.(*Message))
+		return srv.(ChittyChatServer).SendMessage(ctx, req.(*ChatMessage))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-// Broadcast_ServiceDesc is the grpc.ServiceDesc for Broadcast service.
+// ChittyChat_ServiceDesc is the grpc.ServiceDesc for ChittyChat service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var Broadcast_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "proto.Broadcast",
-	HandlerType: (*BroadcastServer)(nil),
+var ChittyChat_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "proto.ChittyChat",
+	HandlerType: (*ChittyChatServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "BroadcastMessage",
-			Handler:    _Broadcast_BroadcastMessage_Handler,
+			MethodName: "SendMessage",
+			Handler:    _ChittyChat_SendMessage_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
 		{
 			StreamName:    "CreateStream",
-			Handler:       _Broadcast_CreateStream_Handler,
+			Handler:       _ChittyChat_CreateStream_Handler,
 			ServerStreams: true,
 		},
 	},

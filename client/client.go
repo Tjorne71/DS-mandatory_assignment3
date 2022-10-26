@@ -13,7 +13,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-var client chat.BroadcastClient
+var client chat.ChittyChatClient
 var wait *sync.WaitGroup
 var LamportT int
 
@@ -32,7 +32,7 @@ func connect(user *chat.User) error {
 		return fmt.Errorf("Connection failed: %v", err)
 	}
 	wait.Add(1)
-	go func(str chat.Broadcast_CreateStreamClient) {
+	go func(str chat.ChittyChat_CreateStreamClient) {
 		defer wait.Done()
 		if err != nil {
 			streamerror = fmt.Errorf("error reading message: %v", err)
@@ -72,19 +72,19 @@ func main() {
 		fmt.Printf("Error Dialling Host: %v\n", err)
 	}
 
-	client = chat.NewBroadcastClient(conn)
+	client = chat.NewChittyChatClient(conn)
 	user := &chat.User{
 		Name: getUserName(),
 	}
 	connect(user)
-	connectionMSG := &chat.Message{
+	connectionMSG := &chat.ChatMessage{
 		Id:        user.Id,
 		Sender:    "Server Message",
 		Content:   fmt.Sprintf("Participant %v joined Chitty-Chat", user.Name),
 		Timestamp: int32(LamportT),
 	}
 
-	client.BroadcastMessage(context.Background(), connectionMSG)
+	client.SendMessage(context.Background(), connectionMSG)
 	wait.Add(1)
 	go func() {
 		defer wait.Done()
@@ -98,7 +98,7 @@ func main() {
 				msgContent = fmt.Sprintf("Participant %v left Chitty-Chat", user.Name)
 				closeClient = true
 			}
-			msg := &chat.Message{
+			msg := &chat.ChatMessage{
 				Id:        user.Id,
 				Sender:    user.Name,
 				Content:   msgContent,
@@ -108,7 +108,7 @@ func main() {
 				fmt.Printf("Message longer than 128 characters\n")
 
 			} else {
-				_, err := client.BroadcastMessage(context.Background(), msg)
+				_, err := client.SendMessage(context.Background(), msg)
 				if err != nil {
 					fmt.Printf("Error sending message: %v\n", err)
 					break
